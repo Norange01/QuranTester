@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import os
 
+chapter=12
 qur = Quran()
 
 def printAr(arStr): # for formatting Arabic text
@@ -28,11 +29,9 @@ def get_all_verses(chapter): # to load all verses from the beginning, for effici
     return verses
 
 print("Loading... please wait.")
-all_verses = get_all_verses(6)  # Get all verses from chapter 6
-
-chapter=6
-verses_count=qur.get_chapter(6)["chapter"]["verses_count"]
-verses=get_all_verses(6)
+all_verses = get_all_verses(chapter)  # Get all verses from chapter
+verses_count=qur.get_chapter(chapter)["chapter"]["verses_count"]
+verses=get_all_verses(chapter)
 
 ayah1=[]
 ayah2=[]
@@ -74,7 +73,7 @@ df.index+=1 # for 1 indexing
 df.to_excel("Chapter_"+str(chapter)+"_Results.xlsx")'''
 
 # Load existing file if available
-file_path = "An'am Tester Results.xlsx"
+file_path = "Chapter_"+str(chapter)+"_Results.xlsx"
 if os.path.exists(file_path):
     df = pd.read_excel(file_path, index_col=0)  # Read existing file
 else:
@@ -89,4 +88,4 @@ run_col_name = f"run{next_run_number}"
 df[run_col_name] = correct
 
 # Save to Excel
-df.to_excel("Chapter_"+str(chapter)+"_Results.xlsx")
+df.to_excel(file_path)
