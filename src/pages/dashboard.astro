@@ -1,4 +1,5 @@
 ---
+export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
 
@@ -6,6 +7,7 @@ const accessToken = Astro.cookies.get("sb-access-token");
 const refreshToken = Astro.cookies.get("sb-refresh-token");
 
 if (!accessToken || !refreshToken) {
+  console.debug("Not signed in. Going to sign in");
   return Astro.redirect("/signin");
 }
 
@@ -31,7 +33,7 @@ try {
   Astro.cookies.delete("sb-refresh-token", {
     path: "/",
   });
-  console.debug("First redirect");
+  console.debug("Not signed in. Going to sign in page");
   return Astro.redirect("/signin");
 }
 

@@ -5,10 +5,10 @@ const { cookies, redirect } = Astro;
 
 const accessToken = cookies.get("sb-access-token");
 const refreshToken = cookies.get("sb-refresh-token");
-export const prerender = false
 
 if (accessToken && refreshToken) {
-  return redirect("/index");
+  console.debug("signed in already. Going to dashboard");
+  return redirect("/dashboard");
 }
 ---
 

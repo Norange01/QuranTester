@@ -21,5 +21,6 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return new Response(error.message, { status: 500 });
   }
 
+  console.debug("Going to sign in page after register");
   return redirect("/signin");
 };
