@@ -38,11 +38,16 @@ try {
 }
 
 const email = session.data.user?.email;
+let display_name = session.data.user?.user_metadata.display_name;
+
+if(!display_name){
+  display_name=email;
+}
 ---
 
 
 <Layout>
-  <h1>Welcome {email}</h1>
+  <h1>Welcome {display_name}</h1>
   <p>We are happy to see you here</p>
   <form action="/api/auth/signout">
     <button type="submit">Sign out</button>
