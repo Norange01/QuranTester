@@ -19,14 +19,14 @@ if (accessToken && refreshToken) {
     <p style="text-align: center;">New here? <a href="/register">Create an account</a></p>
     <form action="/api/auth/signin" method="post" style="display: table; outline: 2px solid var(--color4); padding:20px;">
       <div class="input-div" style="display: table-row;">
-        <label for="email" style="display: table-cell;">Email</label>
-        <input type="email" name="email" id="email" style="display: table-cell;" />
+        <label for="email">Email</label>
+        <input type="email" name="email" id="email"/>
       </div>
-      <div class="input-div" style="display: table-row;">
-        <label for="password" style="display: table-cell;">Password</label>
-        <input type="password" name="password" id="password" style="display: table-cell;" />
+      <div class="input-div">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password"/>
       </div>
-      <div class="input-div" style="display: table-row;">
+      <div class="input-div">
         <button type="submit">Login</button>
       </div>
     </form>
@@ -34,5 +34,10 @@ if (accessToken && refreshToken) {
 </Layout>
 
 <style>
-
+.input-div{
+  display: table-row;
+}
+label, input{
+  display:table-cell;
+}
 </style>

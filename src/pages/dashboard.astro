@@ -53,9 +53,23 @@ if(!display_name){
     <button type="submit">Sign out</button>
     
   </form>
-  <div id='verses' style="outline: 2px solid grey;"></div>
-    <script dir="rtl" lang="ar"
-      chapter=93 verse=6 
-      src="https://qzaidi.github.io/quran/js/quran.js">
-    </script>
+  <div id="prompt-div">
+    
+  </div>
+  <div id="answer-div">
+
+  </div>
+  <button>Reveal</button>
+  <button>Incorrect</button>
+  <button>Correct</button>
 </Layout>
+
+<script>
+  fetch('/Arabic-Original-with-Repeat-Data.csv')
+    .then(response => response.text())
+    .then(text => {
+      const rows = text.trim().split('\n').map(line=>line.split(','));
+       console.log(rows);
+    })
+    
+</script>
