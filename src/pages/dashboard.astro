@@ -3,6 +3,7 @@ export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
 
+
 const accessToken = Astro.cookies.get("sb-access-token");
 const refreshToken = Astro.cookies.get("sb-refresh-token");
 
@@ -65,11 +66,44 @@ if(!display_name){
 </Layout>
 
 <script>
-  fetch('/Arabic-Original-with-Repeat-Data.csv')
-    .then(response => response.text())
-    .then(text => {
-      const rows = text.trim().split('\n').map(line=>line.split(','));
-       console.log(rows);
-    })
+  import Papa from 'papaparse';
+
+  let percentage_from_errors = 20;
+  let equal_surah_weights = false;
+
+  const response1 = await fetch('/Ayahs_with_Metadata.csv');
+  const text1 = await response1.text();
+  const { data } = Papa.parse(text1, { header: true });
+
+  /*const response2 = await fetch('/Surahs_Metadata.csv');
+  const text2 = await response2.text();
+  const { data } = Papa.parse(text2, { header: true });*/
+
+  console.debug(data);
+
+  function display_prompt(){
+    const rand = Math.random() * 100;
+    if (rand < percentage_from_errors) {
+      display_incorrect_prompt();
+    } else {
+      display_forgotten_prompt();
+    }
+
+    function get_random_ayah_entry(ayah_entries: any){
+      if(equal_surah_weights){
+        const random_surah=Math.floor(Math.random()*113);
+        const total_ayahs =20
+
+      }
+    }
+
+    function display_incorrect_prompt(){
+      return
+    }
+
+    function display_forgotten_prompt(){
+      return
+    }
+  }
     
 </script>
