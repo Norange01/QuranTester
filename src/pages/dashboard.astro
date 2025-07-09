@@ -5,6 +5,8 @@ import { supabase } from "../lib/supabase";
 import fs from "node:fs/promises";
 import path from "node:path";
 import Papa from "papaparse";
+import Ayah from "../icons/Ayah.astro";
+
 
 const accessToken = Astro.cookies.get("sb-access-token");
 const refreshToken = Astro.cookies.get("sb-refresh-token");
@@ -86,6 +88,7 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
 <script define:vars={{user_id, ayahs_with_metadata, surahs_metadata, user_tested_ayahs, user_incorrect_tested_ayahs}} type="module">
   //import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
   
+  
 
   let percentage_from_errors = 20;
   let equal_surah_weights = false;
@@ -141,6 +144,7 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
   }
 
   function generate_and_display_prompt(){
+    answer_span.textContent="_";
     const rand = Math.random() * 100;
     if (rand < percentage_from_errors && user_incorrect_tested_ayahs.length>0) {
       display_incorrect_prompt();
@@ -211,14 +215,12 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
     }
 
     function display_prompt_of(answer_ayah){
-      console.debug("Answer ayah: "+answer_ayah);
       
       //prompt_span.textContent = prompt_ayah;
       // If ayah is the first in the surah
       if(ayahs_with_metadata[answer_ayah]["ayah_no_surah"]==1){
         // Ask for the first ayah in that surah
         prompt_span.textContent = "First ayah in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"];
-        console.debug("Prompt: first ayah in surah name");
       }
       // Else if ayah is preceded by (an) identical ayah(s)
       else if(ayahs_with_metadata[answer_ayah]["repeat_sequence_count"]>0){
@@ -227,7 +229,6 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
         if(repeat_sequence_count==ayahs_with_metadata[answer_ayah]["ayah_no_surah"]){
           // Mention the name of the surah
           prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" (in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"]+")";
-          console.debug("Prompt: name of the surah plus identical ayah(s)");
         }
 
         // Else
@@ -239,26 +240,43 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
 
           }
           prompt_span.textContent = str;
-          console.debug("Prompt: a series of identical ayahs");
         }
       } 
       // Else
       else{
         // Show the prompt ayah (ayah immediately preceding the answer ayah)
         prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"];
-        console.debug("Prompt: ayah immediately preceding the answer ayah");
       }
     }
 
     function reveal_answer(){
       answer_span.textContent = ayahs_with_metadata[current_answer_ayah]["ArabicText"];
-      console.debug(ayahs_with_metadata[current_answer_ayah]["ArabicText"]);
 
     }
     document.getElementById("reveal-btn").addEventListener('click', reveal_answer);
 
-    async function update_database_ayah(ayah, incorrectness){
+    function correct(){
+      update_database_ayah(current_answer_ayah, 0);
+      generate_and_display_prompt();
+    }
+    document.getElementById("correct-btn").addEventListener('click', correct);
+
+    function incorrect(){
+      update_database_ayah(current_answer_ayah, 1);
+      generate_and_display_prompt();
+    }
+    document.getElementById("incorrect-btn").addEventListener('click', incorrect);
+
+    /*async function update_database_ayah(ayah, incorrectness){
       const {error} = await supabase.from('tested_ayahs').update({last_tested: new Date().toISOString(), incorrectness: incorrectness}).eq('user_id',user_id).eq('ayah', ayah);
+    }*/
+
+    async function update_database_ayah(ayah, incorrectness){
+      await fetch('/api/record-answer', {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ user_id, ayah, incorrectness }),
+      });
     }
   }
     
