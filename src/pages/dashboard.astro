@@ -212,11 +212,13 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
 
     function display_prompt_of(answer_ayah){
       console.debug("Answer ayah: "+answer_ayah);
+      
       //prompt_span.textContent = prompt_ayah;
       // If ayah is the first in the surah
       if(ayahs_with_metadata[answer_ayah]["ayah_no_surah"]==1){
         // Ask for the first ayah in that surah
         prompt_span.textContent = "First ayah in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"];
+        console.debug("Prompt: first ayah in surah name");
       }
       // Else if ayah is preceded by (an) identical ayah(s)
       else if(ayahs_with_metadata[answer_ayah]["repeat_sequence_count"]>0){
@@ -225,6 +227,7 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
         if(repeat_sequence_count==ayahs_with_metadata[answer_ayah]["ayah_no_surah"]){
           // Mention the name of the surah
           prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" (in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"]+")";
+          console.debug("Prompt: name of the surah plus identical ayah(s)");
         }
 
         // Else
@@ -236,17 +239,19 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
 
           }
           prompt_span.textContent = str;
+          console.debug("Prompt: a series of identical ayahs");
         }
       } 
       // Else
       else{
         // Show the prompt ayah (ayah immediately preceding the answer ayah)
         prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"];
+        console.debug("Prompt: ayah immediately preceding the answer ayah");
       }
     }
 
     function reveal_answer(){
-      answer_span.textContent = current_answer_ayah;
+      answer_span.textContent = ayahs_with_metadata[current_answer_ayah];
     }
     document.getElementById("reveal-btn").addEventListener('click', reveal_answer);
 
