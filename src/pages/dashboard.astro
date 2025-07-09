@@ -2,6 +2,7 @@
 export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
+import { parse } from 'papaparse';
 
 
 const accessToken = Astro.cookies.get("sb-access-token");
@@ -66,9 +67,8 @@ if(!display_name){
   <button>Correct</button>
 </Layout>
 
-<script define:vars={{user_id}}>
-  import Papa from 'papaparse';
-import { supabase } from '../lib/supabase';
+<script define:vars={{user_id, parse}} type="module">
+  
 
   let percentage_from_errors = 20;
   let equal_surah_weights = false;
@@ -118,7 +118,7 @@ import { supabase } from '../lib/supabase';
 
   let incorrect_tenth_size = Math.ceil(user_incorrect_tested_ayahs.length/10);
 
-  console.debug(ayahs_with_metadata);
+  display_prompt();
 
   function get_absolute_ayah_no(ayah, surah){
     return surahs_metadata[surah]["first_ayah"]+ayah-1; // -1 to convert to 0-indexed because relative ayahs are 1-indexed
@@ -192,19 +192,38 @@ import { supabase } from '../lib/supabase';
     }
 
     function display_prompt(answer_ayah){
+      console.debug("Answer ayah: "+answer_ayah);
       prompt_span.textContent = prompt_ayah;
       // If ayah is the first in the surah
+      if(ayahs_with_metadata[answer_ayah]["ayah_no_surah"]==1){
         // Ask for the first ayah in that surah
-
+        prompt_span.textContent = "First ayah in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"];
+      }
       // Else if ayah is preceded by (an) identical ayah(s)
+      else if(ayahs_with_metadata[answer_ayah]["repeat_sequence_count"]>0){
+        let repeat_sequence_count = ayahs_with_metadata[answer_ayah]["repeat_sequence_count"];
         // If the num of identical ayahs preceding it is equal to the relative ayah number
+        if(repeat_sequence_count==ayahs_with_metadata[answer_ayah]["ayah_no_surah"]){
           // Mention the name of the surah
+          prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" (in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"]+")";
+        }
 
         // Else
+        else{
+          let str="";
           // Keep showing preceding ayahs until you reach a non identical ayah
+          for(let j=0; j<repeat_sequence_count; j++){
+            str += "O" + ayahs_with_metadata[answer_ayah-repeat_sequence_count+j]["ArabicText"];
 
+          }
+          prompt_span.textContent = str;
+        }
+      } 
       // Else
+      else{
         // Show the prompt ayah (ayah immediately preceding the answer ayah)
+        prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"];
+      }
     }
 
     function reveal_answer(ayah){
