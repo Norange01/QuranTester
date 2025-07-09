@@ -76,14 +76,33 @@ import { supabase } from '../lib/supabase';
   const prompt_span = document.getElementById("prompt-span");
   const answer_span = document.getElementById("answer-span");
 
-  let current_untested_tenth_idx = 0;
+  let current_forgotten_tenth_idx = 0;
   let current_incorrect_tenth_idx = 0;
 
-  let current_untested_tenth_arr = [];
+  let current_forgotten_tenth_arr = [];
   let current_incorrect_tenth_arr = [];
+
+  let forgotten_ctr=0;
+  let incorrect_ctr=0;
 
   function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
+  }
+
+  function shuffle(array) { // https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+    let currentIndex = array.length;
+
+    // While there remain elements to shuffle...
+    while (currentIndex != 0) {
+
+      // Pick a remaining element...
+      let randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+
+      // And swap it with the current element.
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
   }
 
   const response1 = await fetch('/Ayahs_with_Metadata.csv');
@@ -96,6 +115,8 @@ import { supabase } from '../lib/supabase';
 
   let { data: user_tested_ayahs } = await supabase.from('tested_ayahs').select('last_tested, incorrectness').eq('user_id', user_id).order('last_tested', {ascending: true});
   let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').select('last_tested, incorrectness').eq('user_id', user_id).gt('incorrectness', 0).order('last_tested', {ascending: true});
+
+  let incorrect_tenth_size = Math.ceil(user_incorrect_tested_ayahs.length/10);
 
   console.debug(ayahs_with_metadata);
 
@@ -130,9 +151,20 @@ import { supabase } from '../lib/supabase';
 
     function display_incorrect_prompt(){ // tests ayahs previously answered incorrectly, prioritized by recency (negatively)
       //Select a random ayah among the top (least recent) 10% tested ayahs
-
       // If the top 10% tested ayahs have been tested in this session, move to the next 10%
-      return
+      if(incorrect_ctr>=incorrect_tenth_size){
+        current_incorrect_tenth_idx++;
+        let range_start = incorrect_tenth_size*current_incorrect_tenth_idx;
+        current_incorrect_tenth_arr = Array.from(new Array(incorrect_tenth_size), (x, i) => i + range_start); // Array of indices
+
+        // randomize
+          shuffle(current_incorrect_tenth_arr);
+          incorrect_ctr=0;
+      }
+
+      display_prompt(user_incorrect_tested_ayahs[current_incorrect_tenth_arr[incorrect_ctr]]);
+      incorrect_ctr++;
+
     }
 
     function display_forgotten_prompt(){ // tests all other ayahs, prioritized by recency (negatively)
@@ -145,16 +177,18 @@ import { supabase } from '../lib/supabase';
 
       // Else, select a random ayah among the top (least recent) 10% tested ayahs
       else{
-        // If the top 10% tested ayahs have been tested in this session, move to the next 10%
-        current_untested_tenth_idx++;
-        let range_start = 623*current_untested_tenth_idx;
-        current_untested_tenth_arr = Array.from(new Array(20), (x, i) => i + range_start);
-        // randomize
-
+        if(forgotten_ctr>=623){
+          // If the top 10% tested ayahs have been tested in this session, move to the next 10%
+          current_forgotten_tenth_idx++;
+          let range_start = 623*current_forgotten_tenth_idx;
+          current_forgotten_tenth_arr = Array.from(new Array(623), (x, i) => i + range_start); // Array of indices
+          // randomize
+          shuffle(current_forgotten_tenth_arr);
+          forgotten_ctr=0;
+        }
+        display_prompt(user_tested_ayahs[current_forgotten_tenth_arr[forgotten_ctr]]);
+        forgotten_ctr++;
       }
-
-        
-      return
     }
 
     function display_prompt(answer_ayah){
