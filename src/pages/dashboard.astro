@@ -2,8 +2,9 @@
 export const prerender = false;
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
-import { parse } from 'papaparse';
-
+import fs from "node:fs/promises";
+import path from "node:path";
+import Papa from "papaparse";
 
 const accessToken = Astro.cookies.get("sb-access-token");
 const refreshToken = Astro.cookies.get("sb-refresh-token");
@@ -46,6 +47,21 @@ const user_id = session.data.user?.id;
 if(!display_name){
   display_name=email;
 }
+
+// Parse both CSV files
+const [csv1, csv2] = await Promise.all([
+  fs.readFile(path.resolve("public/Ayahs_with_Metadata.csv"), "utf-8"),
+  fs.readFile(path.resolve("public/Surahs_Metadata.csv"), "utf-8"),
+]);
+
+const { data: ayahs_with_metadata } = Papa.parse(csv1, { header: true });
+const { data: surahs_metadata } = Papa.parse(csv2, { header: true });
+
+let { data: user_tested_ayahs } = await supabase.from('tested_ayahs').select('last_tested, incorrectness').eq('user_id', user_id).order('last_tested', {ascending: true});
+let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').select('last_tested, incorrectness').eq('user_id', user_id).gt('incorrectness', 0).order('last_tested', {ascending: true});
+
+
+
 ---
 
 
@@ -57,21 +73,24 @@ if(!display_name){
     
   </form>
   <div id="prompt-div">
-    <span id="prompt-span"></span>
+    <span id="prompt-span">_</span>
   </div>
   <div id="answer-div">
-    <span id="answer-span"></span>
+    <span id="answer-span">_</span>
   </div>
-  <button>Reveal</button>
-  <button>Incorrect</button>
-  <button>Correct</button>
+  <button id="reveal-btn">Reveal</button>
+  <button id="incorrect-btn">Incorrect</button>
+  <button id="correct-btn">Correct</button>
 </Layout>
 
-<script define:vars={{user_id, parse}} type="module">
+<script define:vars={{user_id, ayahs_with_metadata, surahs_metadata, user_tested_ayahs, user_incorrect_tested_ayahs}} type="module">
+  //import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
   
 
   let percentage_from_errors = 20;
   let equal_surah_weights = false;
+
+  
 
   const prompt_span = document.getElementById("prompt-span");
   const answer_span = document.getElementById("answer-span");
@@ -105,26 +124,23 @@ if(!display_name){
     }
   }
 
-  const response1 = await fetch('/Ayahs_with_Metadata.csv');
-  const text1 = await response1.text();
-  const { data: ayahs_with_metadata } = Papa.parse(text1, { header: true });
 
-  const response2 = await fetch('/Surahs_Metadata.csv');
-  const text2 = await response2.text();
-  const { data: surahs_metadata } = Papa.parse(text2, { header: true });
 
-  let { data: user_tested_ayahs } = await supabase.from('tested_ayahs').select('last_tested, incorrectness').eq('user_id', user_id).order('last_tested', {ascending: true});
-  let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').select('last_tested, incorrectness').eq('user_id', user_id).gt('incorrectness', 0).order('last_tested', {ascending: true});
-
+  
   let incorrect_tenth_size = Math.ceil(user_incorrect_tested_ayahs.length/10);
 
-  display_prompt();
+  const tested_ayah_ids = user_tested_ayahs.map(row => row.ayah);
+  const untested_ayah_ids = Array.from({ length: 6236 }, (_, i) => i).filter(id => !tested_ayah_ids.includes(id));
+
+  let current_answer_ayah = 0;
+
+  generate_and_display_prompt();
 
   function get_absolute_ayah_no(ayah, surah){
     return surahs_metadata[surah]["first_ayah"]+ayah-1; // -1 to convert to 0-indexed because relative ayahs are 1-indexed
   }
 
-  function display_prompt(){
+  function generate_and_display_prompt(){
     const rand = Math.random() * 100;
     if (rand < percentage_from_errors && user_incorrect_tested_ayahs.length>0) {
       display_incorrect_prompt();
@@ -135,15 +151,15 @@ if(!display_name){
     function get_random_ayah_entry(ayah_entries){
       if(equal_surah_weights){
         const surahs = ayah_entries.map(row => row["ayah_no_surah"]).filter(onlyUnique); // get unique surah values
-        const random_surah=surahs[Math.floor(Math.random()*(surahs.length-1))];
+        const random_surah=surahs[Math.floor(Math.random()*(surahs.length))];
         const total_ayahs = surahs_metadata[random_surah]["total_ayah_surah"];
-        const random_ayah = Math.floor(Math.random()*(total_ayahs-1));
+        const random_ayah = Math.floor(Math.random()*(total_ayahs));
 
         return get_absolute_ayah_no(random_ayah, random_surah);
       }
       else{
         const ayahs = ayah_entries.map(row => row["Verse"]).filter(onlyUnique); // Verse column is 1-indexed
-        const random_ayah = ayahs[Math.floor(Math.random()*(ayahs.length-1))];
+        const random_ayah = ayahs[Math.floor(Math.random()*(ayahs.length))];
 
         return random_ayah-1; // -1 to convert to 0-indexed because relative ayahs are 1-indexed
       }
@@ -162,7 +178,8 @@ if(!display_name){
           incorrect_ctr=0;
       }
 
-      display_prompt(user_incorrect_tested_ayahs[current_incorrect_tenth_arr[incorrect_ctr]]);
+      current_answer_ayah = user_incorrect_tested_ayahs[current_incorrect_tenth_arr[incorrect_ctr]];
+      display_prompt_of(current_answer_ayah);
       incorrect_ctr++;
 
     }
@@ -170,8 +187,9 @@ if(!display_name){
     function display_forgotten_prompt(){ // tests all other ayahs, prioritized by recency (negatively)
       // If there are ayahs untested yet, pick random ayahs among them and display.
       if(untested_ayah_ids.length>0){
-        const random_ayah = Math.floor(Math.random()*(untested_ayah_ids.length-1));
-        display_prompt(random_ayah);
+        const random_ayah = Math.floor(Math.random()*(untested_ayah_ids.length));
+        current_answer_ayah = random_ayah;
+        display_prompt_of(random_ayah);
         
       }
 
@@ -186,14 +204,15 @@ if(!display_name){
           shuffle(current_forgotten_tenth_arr);
           forgotten_ctr=0;
         }
-        display_prompt(user_tested_ayahs[current_forgotten_tenth_arr[forgotten_ctr]]);
+        current_answer_ayah = user_tested_ayahs[current_forgotten_tenth_arr[forgotten_ctr]];
+        display_prompt_of(current_answer_ayah);
         forgotten_ctr++;
       }
     }
 
-    function display_prompt(answer_ayah){
+    function display_prompt_of(answer_ayah){
       console.debug("Answer ayah: "+answer_ayah);
-      prompt_span.textContent = prompt_ayah;
+      //prompt_span.textContent = prompt_ayah;
       // If ayah is the first in the surah
       if(ayahs_with_metadata[answer_ayah]["ayah_no_surah"]==1){
         // Ask for the first ayah in that surah
@@ -226,9 +245,10 @@ if(!display_name){
       }
     }
 
-    function reveal_answer(ayah){
-      answer_span.textContent = ayah;
+    function reveal_answer(){
+      answer_span.textContent = current_answer_ayah;
     }
+    document.getElementById("reveal-btn").addEventListener('click', reveal_answer);
 
     async function update_database_ayah(ayah, incorrectness){
       const {error} = await supabase.from('tested_ayahs').update({last_tested: new Date().toISOString(), incorrectness: incorrectness}).eq('user_id',user_id).eq('ayah', ayah);
