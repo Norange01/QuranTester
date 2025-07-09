@@ -251,7 +251,9 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
     }
 
     function reveal_answer(){
-      answer_span.textContent = ayahs_with_metadata[current_answer_ayah];
+      answer_span.textContent = ayahs_with_metadata[current_answer_ayah]["ArabicText"];
+      console.debug(ayahs_with_metadata[current_answer_ayah]["ArabicText"]);
+
     }
     document.getElementById("reveal-btn").addEventListener('click', reveal_answer);
 
