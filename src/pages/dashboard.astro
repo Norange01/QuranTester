@@ -139,14 +139,14 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
 
     function display_incorrect_prompt(){ // tests ayahs previously answered incorrectly, prioritized by recency (negatively)
-      current_answer_ayah = user_incorrect_ayahs_randomized[current_incorrect_idx]["ayah"];
+      current_answer_ayah = 8;
       display_prompt_of(current_answer_ayah);
       current_incorrect_idx=(current_incorrect_idx+1)%incorrect_size;
 
     }
 
     function display_forgotten_prompt(){ // tests all other ayahs, prioritized by recency (negatively)
-      current_answer_ayah = user_forgotten_ayahs_randomized_ids[current_forgotten_idx];
+      current_answer_ayah = 8;
       display_prompt_of(current_answer_ayah);
       current_forgotten_idx=(current_forgotten_idx+1)%forgotten_size;
       
@@ -161,10 +161,10 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
         prompt_span.textContent = "First ayah in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"];
       }
       // Else if ayah is preceded by (an) identical ayah(s)
-      else if(ayahs_with_metadata[answer_ayah]["repeat_sequence_count"]>0){
-        let repeat_sequence_count = ayahs_with_metadata[answer_ayah]["repeat_sequence_count"];
+      else if(ayahs_with_metadata[answer_ayah-1]["repeat_sequence_count"]>0){
+        let repeat_sequence_count = ayahs_with_metadata[answer_ayah-1]["repeat_sequence_count"];
         // If the num of identical ayahs preceding it is equal to the relative ayah number
-        if(repeat_sequence_count==ayahs_with_metadata[answer_ayah]["ayah_no_surah"]){
+        if(repeat_sequence_count==ayahs_with_metadata[answer_ayah-1]["ayah_no_surah"]){
           // Mention the name of the surah
           prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" (in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"]+")";
         }
@@ -173,9 +173,8 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
         else{
           let str="";
           // Keep showing preceding ayahs until you reach a non identical ayah
-          for(let j=0; j<repeat_sequence_count; j++){
-            str += "O" + ayahs_with_metadata[answer_ayah-repeat_sequence_count-1+j]["ArabicText"];
-
+          for(let j=answer_ayah-repeat_sequence_count-1; j<=answer_ayah-1; j++){
+            str = "O"+ayahs_with_metadata[j]["ArabicText"]+ str;
           }
           prompt_span.textContent = str;
         }
