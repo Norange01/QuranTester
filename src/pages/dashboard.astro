@@ -6,6 +6,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import Papa from "papaparse";
 import Ayah from "../icons/Ayah.astro";
+import {get_partitioned_randomized_arr} from "../scripts/partitioned_randomization.js";
 
 
 const accessToken = Astro.cookies.get("sb-access-token");
@@ -59,8 +60,16 @@ const [csv1, csv2] = await Promise.all([
 const { data: ayahs_with_metadata } = Papa.parse(csv1, { header: true });
 const { data: surahs_metadata } = Papa.parse(csv2, { header: true });
 
-let { data: user_tested_ayahs } = await supabase.from('tested_ayahs').select('last_tested, incorrectness').eq('user_id', user_id).order('last_tested', {ascending: true});
-let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').select('last_tested, incorrectness').eq('user_id', user_id).gt('incorrectness', 0).order('last_tested', {ascending: true});
+let { data: user_correct_ayahs } = await supabase.from('tested_ayahs').select('ayah, last_tested, incorrectness').eq('user_id', user_id).lt('incorrectness', 1).order('last_tested', {ascending: true});
+let { data: user_incorrect_ayahs } = await supabase.from('tested_ayahs').select('ayah, last_tested, incorrectness').eq('user_id', user_id).gt('incorrectness', 0).order('last_tested', {ascending: true});
+
+let user_incorrect_ayahs_randomized = get_partitioned_randomized_arr(user_incorrect_ayahs);
+
+const correct_ayah_ids = user_correct_ayahs.map(row => row.ayah);
+const incorrect_ayah_ids = user_incorrect_ayahs.map(row => row.ayah);
+const untested_ayah_ids = Array.from({ length: 6236 }, (_, i) => i).filter(id => !correct_ayah_ids.includes(id) && !incorrect_ayah_ids.includes(id)); // must change when adjustable hifz amount is implemented
+const forgotten_ayah_ids = correct_ayah_ids.concat(untested_ayah_ids);
+let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgotten_ayah_ids);
 
 
 
@@ -81,16 +90,19 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
     <span id="answer-span">_</span>
   </div>
   <button id="reveal-btn">Reveal</button>
-  <button id="incorrect-btn">Incorrect</button>
-  <button id="correct-btn">Correct</button>
+  <div>
+    <button id="incorrect-btn">Incorrect</button>
+    <button id="correct-btn">Correct</button>
+  </div>
+  
 </Layout>
 
-<script define:vars={{user_id, ayahs_with_metadata, surahs_metadata, user_tested_ayahs, user_incorrect_tested_ayahs}} type="module">
+<script define:vars={{user_id, ayahs_with_metadata, surahs_metadata, user_incorrect_ayahs_randomized, user_forgotten_ayahs_randomized_ids, user_correct_ayahs}} type="module">
   //import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
   
   
 
-  let percentage_from_errors = 20;
+  let percentage_from_errors = 80;
   let equal_surah_weights = false;
 
   
@@ -98,42 +110,15 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
   const prompt_span = document.getElementById("prompt-span");
   const answer_span = document.getElementById("answer-span");
 
-  let current_forgotten_tenth_idx = 0;
-  let current_incorrect_tenth_idx = 0;
+  let current_forgotten_idx = 0;
+  let current_incorrect_idx = 0;
 
-  let current_forgotten_tenth_arr = [];
-  let current_incorrect_tenth_arr = [];
-
-  let forgotten_ctr=0;
-  let incorrect_ctr=0;
+  let forgotten_size = user_forgotten_ayahs_randomized_ids.length;
+  let incorrect_size = user_incorrect_ayahs_randomized.length;
 
   function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
   }
-
-  function shuffle(array) { // https://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
-    let currentIndex = array.length;
-
-    // While there remain elements to shuffle...
-    while (currentIndex != 0) {
-
-      // Pick a remaining element...
-      let randomIndex = Math.floor(Math.random() * currentIndex);
-      currentIndex--;
-
-      // And swap it with the current element.
-      [array[currentIndex], array[randomIndex]] = [
-        array[randomIndex], array[currentIndex]];
-    }
-  }
-
-
-
-  
-  let incorrect_tenth_size = Math.ceil(user_incorrect_tested_ayahs.length/10);
-
-  const tested_ayah_ids = user_tested_ayahs.map(row => row.ayah);
-  const untested_ayah_ids = Array.from({ length: 6236 }, (_, i) => i).filter(id => !tested_ayah_ids.includes(id));
 
   let current_answer_ayah = 0;
 
@@ -146,72 +131,25 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
   function generate_and_display_prompt(){
     answer_span.textContent="_";
     const rand = Math.random() * 100;
-    if (rand < percentage_from_errors && user_incorrect_tested_ayahs.length>0) {
+    if (rand < percentage_from_errors && incorrect_size>0) {
       display_incorrect_prompt();
     } else {
       display_forgotten_prompt();
     }
 
-    function get_random_ayah_entry(ayah_entries){
-      if(equal_surah_weights){
-        const surahs = ayah_entries.map(row => row["ayah_no_surah"]).filter(onlyUnique); // get unique surah values
-        const random_surah=surahs[Math.floor(Math.random()*(surahs.length))];
-        const total_ayahs = surahs_metadata[random_surah]["total_ayah_surah"];
-        const random_ayah = Math.floor(Math.random()*(total_ayahs));
-
-        return get_absolute_ayah_no(random_ayah, random_surah);
-      }
-      else{
-        const ayahs = ayah_entries.map(row => row["Verse"]).filter(onlyUnique); // Verse column is 1-indexed
-        const random_ayah = ayahs[Math.floor(Math.random()*(ayahs.length))];
-
-        return random_ayah-1; // -1 to convert to 0-indexed because relative ayahs are 1-indexed
-      }
-    }
 
     function display_incorrect_prompt(){ // tests ayahs previously answered incorrectly, prioritized by recency (negatively)
-      //Select a random ayah among the top (least recent) 10% tested ayahs
-      // If the top 10% tested ayahs have been tested in this session, move to the next 10%
-      if(incorrect_ctr>=incorrect_tenth_size){
-        current_incorrect_tenth_idx++;
-        let range_start = incorrect_tenth_size*current_incorrect_tenth_idx;
-        current_incorrect_tenth_arr = Array.from(new Array(incorrect_tenth_size), (x, i) => i + range_start); // Array of indices
-
-        // randomize
-          shuffle(current_incorrect_tenth_arr);
-          incorrect_ctr=0;
-      }
-
-      current_answer_ayah = user_incorrect_tested_ayahs[current_incorrect_tenth_arr[incorrect_ctr]];
+      current_answer_ayah = user_incorrect_ayahs_randomized[current_incorrect_idx]["ayah"];
       display_prompt_of(current_answer_ayah);
-      incorrect_ctr++;
+      current_incorrect_idx=(current_incorrect_idx+1)%incorrect_size;
 
     }
 
     function display_forgotten_prompt(){ // tests all other ayahs, prioritized by recency (negatively)
-      // If there are ayahs untested yet, pick random ayahs among them and display.
-      if(untested_ayah_ids.length>0){
-        const random_ayah = Math.floor(Math.random()*(untested_ayah_ids.length));
-        current_answer_ayah = random_ayah;
-        display_prompt_of(random_ayah);
-        
-      }
-
-      // Else, select a random ayah among the top (least recent) 10% tested ayahs
-      else{
-        if(forgotten_ctr>=623){
-          // If the top 10% tested ayahs have been tested in this session, move to the next 10%
-          current_forgotten_tenth_idx++;
-          let range_start = 623*current_forgotten_tenth_idx;
-          current_forgotten_tenth_arr = Array.from(new Array(623), (x, i) => i + range_start); // Array of indices
-          // randomize
-          shuffle(current_forgotten_tenth_arr);
-          forgotten_ctr=0;
-        }
-        current_answer_ayah = user_tested_ayahs[current_forgotten_tenth_arr[forgotten_ctr]];
-        display_prompt_of(current_answer_ayah);
-        forgotten_ctr++;
-      }
+      current_answer_ayah = user_forgotten_ayahs_randomized_ids[current_forgotten_idx];
+      display_prompt_of(current_answer_ayah);
+      current_forgotten_idx=(current_forgotten_idx+1)%forgotten_size;
+      
     }
 
     function display_prompt_of(answer_ayah){
@@ -236,7 +174,7 @@ let { data: user_incorrect_tested_ayahs } = await supabase.from('tested_ayahs').
           let str="";
           // Keep showing preceding ayahs until you reach a non identical ayah
           for(let j=0; j<repeat_sequence_count; j++){
-            str += "O" + ayahs_with_metadata[answer_ayah-repeat_sequence_count+j]["ArabicText"];
+            str += "O" + ayahs_with_metadata[answer_ayah-repeat_sequence_count-1+j]["ArabicText"];
 
           }
           prompt_span.textContent = str;
