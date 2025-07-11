@@ -1,12 +1,13 @@
 ---
 export const prerender = false;
 import Layout from "../layouts/Layout.astro";
+import '../styles/global.css';
 import { supabase } from "../lib/supabase";
 import fs from "node:fs/promises";
 import path from "node:path";
 import Papa from "papaparse";
 import Ayah from "../icons/Ayah.astro";
-import {get_partitioned_randomized_arr} from "../scripts/partitioned_randomization.js";
+import {get_partitioned_randomized_arr, shuffle} from "../scripts/partitioned_randomization.js";
 
 
 const accessToken = Astro.cookies.get("sb-access-token");
@@ -67,7 +68,8 @@ let user_incorrect_ayahs_randomized = get_partitioned_randomized_arr(user_incorr
 
 const correct_ayah_ids = user_correct_ayahs.map(row => row.ayah);
 const incorrect_ayah_ids = user_incorrect_ayahs.map(row => row.ayah);
-const untested_ayah_ids = Array.from({ length: 6236 }, (_, i) => i).filter(id => !correct_ayah_ids.includes(id) && !incorrect_ayah_ids.includes(id)); // must change when adjustable hifz amount is implemented
+let untested_ayah_ids = Array.from({ length: 6236 }, (_, i) => i).filter(id => !correct_ayah_ids.includes(id) && !incorrect_ayah_ids.includes(id)); // must change when adjustable hifz amount is implemented
+shuffle(untested_ayah_ids);
 const forgotten_ayah_ids = correct_ayah_ids.concat(untested_ayah_ids);
 let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgotten_ayah_ids);
 
@@ -83,32 +85,88 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     <button type="submit">Sign out</button>
     
   </form>
-  <div id="prompt-div">
-    <span id="prompt-span">_</span>
+  <div id="prompt-and-answer">
+    <div id="prompt-div">
+      <span id="prompt-span">_</span>
+    </div>
+    <div id="answer-div">
+      <span id="answer-span">_</span>
+    </div>
   </div>
-  <div id="answer-div">
-    <span id="answer-span">_</span>
-  </div>
-  <button id="reveal-btn">Reveal</button>
+  <button id="reveal-btn" class="active">Reveal</button>
   <div>
-    <button id="incorrect-btn">Incorrect</button>
-    <button id="correct-btn">Correct</button>
+    <button id="incorrect-btn" class="inactive">Incorrect</button>
+    <button id="correct-btn" class="inactive">Correct</button>
   </div>
   
 </Layout>
+
+<style>
+  .active{
+    display:block;
+  }
+
+  .inactive{
+    display:none;
+  }
+
+  #prompt-span, #answer-span{
+    font-size: 30px;
+    direction: rtl;
+    unicode-bidi: bidi-override;
+  }
+
+  #prompt-span{
+    color:white;
+  }
+
+  #answer-span{
+    color:var(--color4);
+  }
+
+  #prompt-and-answer{
+    position:fixed;
+    overflow:scroll;
+    background-color: var(--color0);
+    height:60%;
+    width:100%;
+    padding:20px;
+  }
+  #reveal-btn{
+    position:fixed;
+    height:20%;
+    width:100%;
+    bottom:0;
+  }
+  #correct-btn, #incorrect-btn{
+    width:50%;
+    height:20%;
+    position:fixed;
+    bottom:0;
+  }
+  #correct-btn{
+    right:0;
+  }
+  #incorrect-btn{
+    left:0;
+  }
+</style>
 
 <script define:vars={{user_id, ayahs_with_metadata, surahs_metadata, user_incorrect_ayahs_randomized, user_forgotten_ayahs_randomized_ids, user_correct_ayahs}} type="module">
   //import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
   
   
 
-  let percentage_from_errors = 80;
+  let percentage_from_errors = 20;
   let equal_surah_weights = false;
 
   
 
   const prompt_span = document.getElementById("prompt-span");
   const answer_span = document.getElementById("answer-span");
+  const reveal_btn = document.getElementById("reveal-btn");
+  const correct_btn = document.getElementById("correct-btn");
+  const incorrect_btn = document.getElementById("incorrect-btn");  
 
   let current_forgotten_idx = 0;
   let current_incorrect_idx = 0;
@@ -136,85 +194,102 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     } else {
       display_forgotten_prompt();
     }
+  }
 
 
-    function display_incorrect_prompt(){ // tests ayahs previously answered incorrectly, prioritized by recency (negatively)
-      current_answer_ayah = 8;
-      display_prompt_of(current_answer_ayah);
-      current_incorrect_idx=(current_incorrect_idx+1)%incorrect_size;
+  function display_incorrect_prompt(){ // tests ayahs previously answered incorrectly, prioritized by recency (negatively)
+    current_answer_ayah = user_incorrect_ayahs_randomized[current_incorrect_idx]["ayah"];
+    display_prompt_of(current_answer_ayah);
+    current_incorrect_idx=(current_incorrect_idx+1)%incorrect_size;
 
+  }
+
+  function display_forgotten_prompt(){ // tests all other ayahs, prioritized by recency (negatively)
+    current_answer_ayah = user_forgotten_ayahs_randomized_ids[current_forgotten_idx];
+    display_prompt_of(current_answer_ayah);
+    current_forgotten_idx=(current_forgotten_idx+1)%forgotten_size;
+    
+  }
+
+  function display_prompt_of(answer_ayah){
+    
+    //prompt_span.textContent = prompt_ayah;
+    // If ayah is the first in the surah
+    if(ayahs_with_metadata[answer_ayah]["ayah_no_surah"]==1){
+      // Ask for the first ayah in that surah
+      prompt_span.textContent = "First ayah in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"];
     }
-
-    function display_forgotten_prompt(){ // tests all other ayahs, prioritized by recency (negatively)
-      current_answer_ayah = 8;
-      display_prompt_of(current_answer_ayah);
-      current_forgotten_idx=(current_forgotten_idx+1)%forgotten_size;
-      
-    }
-
-    function display_prompt_of(answer_ayah){
-      
-      //prompt_span.textContent = prompt_ayah;
-      // If ayah is the first in the surah
-      if(ayahs_with_metadata[answer_ayah]["ayah_no_surah"]==1){
-        // Ask for the first ayah in that surah
-        prompt_span.textContent = "First ayah in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"];
+    // Else if ayah is preceded by (an) identical ayah(s)
+    else if(ayahs_with_metadata[answer_ayah-1]["repeat_sequence_count"]>0){
+      let repeat_sequence_count = ayahs_with_metadata[answer_ayah-1]["repeat_sequence_count"];
+      // If the num of identical ayahs preceding it is equal to the relative ayah number
+      if(repeat_sequence_count==ayahs_with_metadata[answer_ayah-1]["ayah_no_surah"]){
+        // Mention the name of the surah
+        prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" (in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"]+")";
       }
-      // Else if ayah is preceded by (an) identical ayah(s)
-      else if(ayahs_with_metadata[answer_ayah-1]["repeat_sequence_count"]>0){
-        let repeat_sequence_count = ayahs_with_metadata[answer_ayah-1]["repeat_sequence_count"];
-        // If the num of identical ayahs preceding it is equal to the relative ayah number
-        if(repeat_sequence_count==ayahs_with_metadata[answer_ayah-1]["ayah_no_surah"]){
-          // Mention the name of the surah
-          prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" (in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"]+")";
-        }
 
-        // Else
-        else{
-          let str="";
-          // Keep showing preceding ayahs until you reach a non identical ayah
-          for(let j=answer_ayah-repeat_sequence_count-1; j<=answer_ayah-1; j++){
-            str = "O"+ayahs_with_metadata[j]["ArabicText"]+ str;
-          }
-          prompt_span.textContent = str;
-        }
-      } 
       // Else
       else{
-        // Show the prompt ayah (ayah immediately preceding the answer ayah)
-        prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"];
+        let str="";
+        // Keep showing preceding ayahs until you reach a non identical ayah
+        for(let j=answer_ayah-repeat_sequence_count-1; j<=answer_ayah-1; j++){
+          str = "O"+ayahs_with_metadata[j]["ArabicText"]+ str;
+        }
+        prompt_span.textContent = str;
       }
+    } 
+    // Else
+    else{
+      // Show the prompt ayah (ayah immediately preceding the answer ayah)
+      prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"];
     }
+  }
 
-    function reveal_answer(){
-      answer_span.textContent = ayahs_with_metadata[current_answer_ayah]["ArabicText"];
+  function reveal_answer(){
+    answer_span.textContent = ayahs_with_metadata[current_answer_ayah]["ArabicText"];
+    reveal_btn.classList.remove("active");
+    correct_btn.classList.add("active");
+    incorrect_btn.classList.add("active");
+    reveal_btn.classList.add("inactive");
+    correct_btn.classList.remove("inactive");
+    incorrect_btn.classList.remove("inactive");
+  }
+  reveal_btn.addEventListener('click', reveal_answer);
 
-    }
-    document.getElementById("reveal-btn").addEventListener('click', reveal_answer);
+  function correct(){
+    update_database_ayah(current_answer_ayah, 0);
+    generate_and_display_prompt();
+    reveal_btn.classList.add("active");
+    correct_btn.classList.remove("active");
+    incorrect_btn.classList.remove("active");
+    reveal_btn.classList.remove("inactive");
+    correct_btn.classList.add("inactive");
+    incorrect_btn.classList.add("inactive")
+  }
+  correct_btn.addEventListener('click', correct);
 
-    function correct(){
-      update_database_ayah(current_answer_ayah, 0);
-      generate_and_display_prompt();
-    }
-    document.getElementById("correct-btn").addEventListener('click', correct);
+  function incorrect(){
+    update_database_ayah(current_answer_ayah, 1);
+    generate_and_display_prompt();
+    reveal_btn.classList.add("active");
+    correct_btn.classList.remove("active");
+    incorrect_btn.classList.remove("active");
+    reveal_btn.classList.remove("inactive");
+    correct_btn.classList.add("inactive");
+    incorrect_btn.classList.add("inactive")
+  }
+  incorrect_btn.addEventListener('click', incorrect);
 
-    function incorrect(){
-      update_database_ayah(current_answer_ayah, 1);
-      generate_and_display_prompt();
-    }
-    document.getElementById("incorrect-btn").addEventListener('click', incorrect);
+  /*async function update_database_ayah(ayah, incorrectness){
+    const {error} = await supabase.from('tested_ayahs').update({last_tested: new Date().toISOString(), incorrectness: incorrectness}).eq('user_id',user_id).eq('ayah', ayah);
+  }*/
 
-    /*async function update_database_ayah(ayah, incorrectness){
-      const {error} = await supabase.from('tested_ayahs').update({last_tested: new Date().toISOString(), incorrectness: incorrectness}).eq('user_id',user_id).eq('ayah', ayah);
-    }*/
-
-    async function update_database_ayah(ayah, incorrectness){
-      await fetch('/api/record-answer', {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ user_id, ayah, incorrectness }),
-      });
-    }
+  async function update_database_ayah(ayah, incorrectness){
+    await fetch('/api/record-answer', {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ user_id, ayah, incorrectness }),
+    });
   }
     
 </script>

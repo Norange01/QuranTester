@@ -1,4 +1,5 @@
 html{
+    --color0: black;
     --color1: #4a1123;
     --color2: #0d5148;
     --color3: #94b9b4;
@@ -9,6 +10,8 @@ body{
     width:100%;
     height: 100vh;
     margin:0;
+    overflow: hidden;
+    background-color: var(--color1);
 }
 
 #full-screen-elem{
