@@ -137,18 +137,27 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     height:20%;
     width:100%;
     bottom:0;
+    font-size: 30px;
+    background-color: var(--color2);
+    color:var(--color3);
+    border:none
   }
   #correct-btn, #incorrect-btn{
     width:50%;
     height:20%;
     position:fixed;
     bottom:0;
+    font-size: 30px;
   }
   #correct-btn{
     right:0;
+    background-color: greenyellow;
+    color:green;
   }
   #incorrect-btn{
     left:0;
+    background-color: red;
+    color:pink;
   }
 </style>
 
@@ -225,7 +234,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
       // If the num of identical ayahs preceding it is equal to the relative ayah number
       if(repeat_sequence_count==ayahs_with_metadata[answer_ayah-1]["ayah_no_surah"]){
         // Mention the name of the surah
-        prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" (in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"]+")";
+        prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" ۝ "+" (in "+surahs_metadata[ayahs_with_metadata[answer_ayah]["Chapter"]-1]["surah_name_roman"]+")";
       }
 
       // Else
@@ -233,7 +242,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
         let str="";
         // Keep showing preceding ayahs until you reach a non identical ayah
         for(let j=answer_ayah-repeat_sequence_count-1; j<=answer_ayah-1; j++){
-          str = "O"+ayahs_with_metadata[j]["ArabicText"]+ str;
+          str = str+ ayahs_with_metadata[j]["ArabicText"]+ " ۝ ";
         }
         prompt_span.textContent = str;
       }
@@ -241,12 +250,12 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     // Else
     else{
       // Show the prompt ayah (ayah immediately preceding the answer ayah)
-      prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"];
+      prompt_span.textContent = ayahs_with_metadata[answer_ayah-1]["ArabicText"]+" ۝ ";
     }
   }
 
   function reveal_answer(){
-    answer_span.textContent = ayahs_with_metadata[current_answer_ayah]["ArabicText"];
+    answer_span.textContent = ayahs_with_metadata[current_answer_ayah]["ArabicText"]+" ۝ ";
     reveal_btn.classList.remove("active");
     correct_btn.classList.add("active");
     incorrect_btn.classList.add("active");
