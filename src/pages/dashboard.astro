@@ -164,9 +164,9 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 <script define:vars={{user_id, ayahs_with_metadata, surahs_metadata, user_incorrect_ayahs_randomized, user_forgotten_ayahs_randomized_ids, user_correct_ayahs}} type="module">
   //import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
   
-  
+  const LEARNING_INCREMENT = 2;
 
-  let percentage_from_errors = 20;
+  let percentage_from_errors = 50;
   let equal_surah_weights = false;
 
   
@@ -179,6 +179,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
   let current_forgotten_idx = 0;
   let current_incorrect_idx = 0;
+  let current_mode = 0; // 0: forgotten, 1: incorrect
 
   let forgotten_size = user_forgotten_ayahs_randomized_ids.length;
   let incorrect_size = user_incorrect_ayahs_randomized.length;
@@ -212,6 +213,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     current_answer_ayah = user_incorrect_ayahs_randomized[current_incorrect_idx]["ayah"];
     display_prompt_of(current_answer_ayah);
     current_incorrect_idx=(current_incorrect_idx+1)%incorrect_size;
+    current_mode = 1;
 
   }
 
@@ -219,6 +221,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     current_answer_ayah = user_forgotten_ayahs_randomized_ids[current_forgotten_idx];
     display_prompt_of(current_answer_ayah);
     current_forgotten_idx=(current_forgotten_idx+1)%forgotten_size;
+    current_mode = 0;
     
   }
 
@@ -268,7 +271,14 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   reveal_btn.addEventListener('click', reveal_answer);
 
   function correct(){
-    update_database_ayah(current_answer_ayah, 0);
+    if(current_mode==0){// Forgotten mode
+      update_database_ayah(current_answer_ayah, 0);
+    }
+    else{ // Incorrect mode
+      let incorrectness_amount = user_incorrect_ayahs_randomized[current_incorrect_idx]["incorrectness"];
+      if(incorrectness_amount<0){incorrectness_amount=0;}
+      update_database_ayah(current_answer_ayah, incorrectness_amount-LEARNING_INCREMENT);
+    }
     generate_and_display_prompt();
     reveal_btn.classList.add("active");
     correct_btn.classList.remove("active");
