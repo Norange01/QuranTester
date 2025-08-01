@@ -183,6 +183,8 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   let forgotten_size = user_forgotten_ayahs_randomized_ids.length;
   let incorrect_size = user_incorrect_ayahs_randomized.length;
 
+  let pressStartTime;
+
   function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
   }
@@ -278,7 +280,17 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   correct_btn.addEventListener('click', correct);
 
   function incorrect(){
-    update_database_ayah(current_answer_ayah, 1);
+    let incorrectness_amount = Math.floor((performance.now() - pressStartTime)/100);
+    // Upper limit
+    if(incorrectness_amount<1){
+      incorrectness_amount=1;
+    }
+    // Lower limit
+    else if(incorrectness_amount>20){
+      incorrectness_amount=20;
+    }
+    console.log(`Button pressed for ${incorrectness_amount*100} milliseconds.`);
+    update_database_ayah(current_answer_ayah, incorrectness_amount);
     generate_and_display_prompt();
     reveal_btn.classList.add("active");
     correct_btn.classList.remove("active");
@@ -287,7 +299,14 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     correct_btn.classList.add("inactive");
     incorrect_btn.classList.add("inactive")
   }
-  incorrect_btn.addEventListener('click', incorrect);
+  incorrect_btn.addEventListener('mousedown', () => {
+    pressStartTime = performance.now();
+  });
+  incorrect_btn.addEventListener('touchstart', () => {
+    pressStartTime = performance.now();
+  });
+  incorrect_btn.addEventListener('mouseup', incorrect);
+  incorrect_btn.addEventListener('touchend', incorrect);
 
   /*async function update_database_ayah(ayah, incorrectness){
     const {error} = await supabase.from('tested_ayahs').update({last_tested: new Date().toISOString(), incorrectness: incorrectness}).eq('user_id',user_id).eq('ayah', ayah);
