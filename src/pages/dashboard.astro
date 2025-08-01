@@ -95,7 +95,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   </div>
   <button id="reveal-btn" class="active">Reveal</button>
   <div>
-    <button id="incorrect-btn" class="inactive">Incorrect</button>
+    <button id="incorrect-btn" class="inactive"><span>Incorrect</span></button>
     <button id="correct-btn" class="inactive">Correct</button>
   </div>
   
@@ -158,6 +158,31 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     left:0;
     background-color: red;
     color:pink;
+    overflow: hidden;
+  }
+  #incorrect-btn::before{
+    content: "";
+    position: absolute;
+    background-color: darkred;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 100%;
+    transition: width 0s;
+    z-index: 0;
+  }
+  #incorrect-btn.filling::before {
+    animation: fill-bar 2s linear forwards;
+  }
+
+  @keyframes fill-bar {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+
+  #incorrect-btn span {
+    position: relative;
+    z-index: 1;
   }
 </style>
 
@@ -290,6 +315,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   correct_btn.addEventListener('click', correct);
 
   function incorrect(){
+    incorrect_btn.classList.remove('filling');
     let incorrectness_amount = Math.floor((performance.now() - pressStartTime)/100);
     // Upper limit
     if(incorrectness_amount<1){
@@ -311,9 +337,11 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   }
   incorrect_btn.addEventListener('mousedown', () => {
     pressStartTime = performance.now();
+    incorrect_btn.classList.add('filling');
   });
   incorrect_btn.addEventListener('touchstart', () => {
     pressStartTime = performance.now();
+    incorrect_btn.classList.add('filling');
   });
   incorrect_btn.addEventListener('mouseup', incorrect);
   incorrect_btn.addEventListener('touchend', incorrect);
