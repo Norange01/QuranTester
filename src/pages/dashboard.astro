@@ -8,6 +8,7 @@ import path from "node:path";
 import Papa from "papaparse";
 import Ayah from "../icons/Ayah.astro";
 import {get_partitioned_randomized_arr, shuffle} from "../scripts/partitioned_randomization.js";
+import { count } from "node:console";
 
 
 const accessToken = Astro.cookies.get("sb-access-token");
@@ -64,13 +65,24 @@ const { data: surahs_metadata } = Papa.parse(csv2, { header: true });
 let { data: user_correct_ayahs } = await supabase.from('tested_ayahs').select('ayah, last_tested, incorrectness').eq('user_id', user_id).lt('incorrectness', 1).order('last_tested', {ascending: true});
 let { data: user_incorrect_ayahs } = await supabase.from('tested_ayahs').select('ayah, last_tested, incorrectness').eq('user_id', user_id).gt('incorrectness', 0).order('last_tested', {ascending: true});
 
+/*let num_correct_ayahs_today = 0;
+for(let i=user_correct_ayahs?.length-1; i>=0; i--){
+
+}*/
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const tomorrow = new Date(today);
+tomorrow.setDate(today.getDate()+1);
+let {count: loaded_num_forgotten_ayahs_today} = await supabase.from('tested_ayahs').select('*', {count:'exact', head: true}).gte('last_tested', today.toISOString()).lt('last_tested', tomorrow.toISOString());
+console.log("loaded_num_forgotten_ayahs_today:", loaded_num_forgotten_ayahs_today);
+
 let user_incorrect_ayahs_randomized = get_partitioned_randomized_arr(user_incorrect_ayahs);
 
 const correct_ayah_ids = user_correct_ayahs.map(row => row.ayah);
 const incorrect_ayah_ids = user_incorrect_ayahs.map(row => row.ayah);
 let untested_ayah_ids = Array.from({ length: 6236 }, (_, i) => i).filter(id => !correct_ayah_ids.includes(id) && !incorrect_ayah_ids.includes(id)); // must change when adjustable hifz amount is implemented
 shuffle(untested_ayah_ids);
-const forgotten_ayah_ids = correct_ayah_ids.concat(untested_ayah_ids);
+const forgotten_ayah_ids = untested_ayah_ids.concat(correct_ayah_ids);
 let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgotten_ayah_ids);
 
 
@@ -80,7 +92,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
 <Layout>
   <h1>Welcome {display_name}</h1>
-  <p>We are happy to see you here</p>
+  <p><span id="on-track-span"></span></p>
   <form action="/api/auth/signout">
     <button type="submit">Sign out</button>
     
@@ -191,7 +203,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   }
 </style>
 
-<script define:vars={{user_id, ayahs_with_metadata, surahs_metadata, user_incorrect_ayahs_randomized, user_forgotten_ayahs_randomized_ids, user_correct_ayahs}} type="module">
+<script define:vars={{user_id, ayahs_with_metadata, surahs_metadata, user_incorrect_ayahs_randomized, user_forgotten_ayahs_randomized_ids, user_correct_ayahs, loaded_num_forgotten_ayahs_today}} type="module">
   //import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
   
   const LEARNING_INCREMENT = 2;
@@ -204,6 +216,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   const prompt_span = document.getElementById("prompt-span");
   const answer_span = document.getElementById("answer-span");
   const surah_name_span = document.getElementById("surah-name-span");
+  const on_track_span = document.getElementById("on-track-span");
   const reveal_btn = document.getElementById("reveal-btn");
   const correct_btn = document.getElementById("correct-btn");
   const incorrect_btn = document.getElementById("incorrect-btn");  
@@ -214,6 +227,8 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
   let forgotten_size = user_forgotten_ayahs_randomized_ids.length;
   let incorrect_size = user_incorrect_ayahs_randomized.length;
+
+  let num_forgotten_ayahs_today = loaded_num_forgotten_ayahs_today;
 
   let pressStartTime;
 
@@ -227,6 +242,10 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
   function get_absolute_ayah_no(ayah, surah){
     return surahs_metadata[surah]["first_ayah"]+ayah-1; // -1 to convert to 0-indexed because relative ayahs are 1-indexed
+  }
+
+  function update_on_track_span(){
+    on_track_span.textContent = "On track to finish a whole revision every "+(Math.round(6236/num_forgotten_ayahs_today)).toString()+" days inshaAllah.";
   }
 
   function generate_and_display_prompt(){
@@ -306,6 +325,8 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   function correct(){
     if(current_mode==0){// Forgotten mode
       update_database_ayah(current_answer_ayah, 0);
+      num_forgotten_ayahs_today +=1;
+      update_on_track_span();
     }
     else{ // Incorrect mode
       let incorrectness_amount = user_incorrect_ayahs_randomized[current_incorrect_idx]["incorrectness"];
@@ -323,6 +344,10 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   correct_btn.addEventListener('click', correct);
 
   function incorrect(){
+    if(current_mode==0){// Forgotten mode
+      num_forgotten_ayahs_today +=1;  
+      update_on_track_span();
+    }
     incorrect_btn.classList.remove('filling');
     let incorrectness_amount = Math.floor((performance.now() - pressStartTime)/100);
     // Upper limit
