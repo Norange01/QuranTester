@@ -74,7 +74,6 @@ today.setHours(0, 0, 0, 0);
 const tomorrow = new Date(today);
 tomorrow.setDate(today.getDate()+1);
 let {count: loaded_num_forgotten_ayahs_today} = await supabase.from('tested_ayahs').select('*', {count:'exact', head: true}).gte('last_tested', today.toISOString()).lt('last_tested', tomorrow.toISOString());
-console.log("loaded_num_forgotten_ayahs_today:", loaded_num_forgotten_ayahs_today);
 
 let user_incorrect_ayahs_randomized = get_partitioned_randomized_arr(user_incorrect_ayahs);
 
@@ -97,6 +96,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     <button type="submit">Sign out</button>
     
   </form>
+  <button id="hifz-data-btn"><a href=/hifz_data style="text-decoration: none;">Hifz Data</a></button>
   <div id="prompt-and-answer">
     <span id="surah-name-span" style="color: rgb(137, 137, 137);">_</span>
     <div id="prompt-div">
@@ -219,7 +219,8 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   const on_track_span = document.getElementById("on-track-span");
   const reveal_btn = document.getElementById("reveal-btn");
   const correct_btn = document.getElementById("correct-btn");
-  const incorrect_btn = document.getElementById("incorrect-btn");  
+  const incorrect_btn = document.getElementById("incorrect-btn");
+ 
 
   let current_forgotten_idx = 0;
   let current_incorrect_idx = 0;
@@ -245,7 +246,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
   }
 
   function update_on_track_span(){
-    on_track_span.textContent = "On track to finish a whole revision every "+(Math.round(6236/num_forgotten_ayahs_today)).toString()+" days inshaAllah.";
+    on_track_span.textContent = "On track to finish a whole revision every "+(Math.round(6236/num_forgotten_ayahs_today)).toString()+" days inshaAllah."; // must change when adjustable hifz amount is implemented
   }
 
   function generate_and_display_prompt(){

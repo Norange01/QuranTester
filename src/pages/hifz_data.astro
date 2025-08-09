@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+export const prerender = false;
+import Layout from "../layouts/Layout.astro";
+import { supabase } from "../lib/supabase";
+import fs from "node:fs/promises";
+import path from "node:path";
+import Papa from "papaparse";
+import Ayah from "../icons/Ayah.astro";
+import {get_partitioned_randomized_arr, shuffle} from "../scripts/partitioned_randomization.js";
+import { count } from "node:console";
+
+const accessToken = Astro.cookies.get("sb-access-token");
+const refreshToken = Astro.cookies.get("sb-refresh-token");
+
+if (!accessToken || !refreshToken) {
+  console.debug("Not signed in. Going to sign in");
+  return Astro.redirect("/signin");
+}
+
+let session;
+try {
+  session = await supabase.auth.setSession({
+    refresh_token: refreshToken.value,
+    access_token: accessToken.value,
+  });
+  if (session.error) {
+    Astro.cookies.delete("sb-access-token", {
+      path: "/",
+    });
+    Astro.cookies.delete("sb-refresh-token", {
+      path: "/",
+    });
+    return Astro.redirect("/signin");
+  }
+} catch (error) {
+  Astro.cookies.delete("sb-access-token", {
+    path: "/",
+  });
+  Astro.cookies.delete("sb-refresh-token", {
+    path: "/",
+  });
+  console.debug("Not signed in. Going to sign in page");
+  return Astro.redirect("/signin");
+}
+
+const email = session.data.user?.email;
+let display_name = session.data.user?.user_metadata.display_name;
+const user_id = session.data.user?.id;
+
+if(!display_name){
+  display_name=email;
+}
+---
+
+<Layout>
+    <h1>Hifz Data</h1>
+    <button><a href=/dashboard style="text-decoration: none;">Go back</a></button>
+
+</Layout>
