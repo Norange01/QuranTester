@@ -86,6 +86,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     
   </form>
   <div id="prompt-and-answer">
+    <span id="surah-name-span" style="color: rgb(137, 137, 137);">_</span>
     <div id="prompt-div">
       <span id="prompt-span">_</span>
     </div>
@@ -114,6 +115,10 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     font-size: 30px;
     direction: rtl;
     unicode-bidi: bidi-override;
+  }
+
+  #surah-name-span{
+    color: white;
   }
 
   #prompt-span{
@@ -198,6 +203,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
   const prompt_span = document.getElementById("prompt-span");
   const answer_span = document.getElementById("answer-span");
+  const surah_name_span = document.getElementById("surah-name-span");
   const reveal_btn = document.getElementById("reveal-btn");
   const correct_btn = document.getElementById("correct-btn");
   const incorrect_btn = document.getElementById("incorrect-btn");  
@@ -225,6 +231,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
   function generate_and_display_prompt(){
     answer_span.textContent="_";
+    surah_name_span.textContent="_";
     const rand = Math.random() * 100;
     if (rand < percentage_from_errors && incorrect_size>0) {
       display_incorrect_prompt();
@@ -286,6 +293,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
   function reveal_answer(){
     answer_span.textContent = ayahs_with_metadata[current_answer_ayah]["ArabicText"]+" ۝ ";
+    surah_name_span.textContent = "[سورة "+surahs_metadata[ayahs_with_metadata[current_answer_ayah]["Chapter"]-1]["surah_name_ar"]+"]";
     reveal_btn.classList.remove("active");
     correct_btn.classList.add("active");
     incorrect_btn.classList.add("active");
