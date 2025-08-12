@@ -55,6 +55,147 @@ if(!display_name){
 
 <Layout>
     <h1>Hifz Data</h1>
-    <button><a href=/dashboard style="text-decoration: none;">Go back</a></button>
-
+    <button><a href=/dashboard style="text-decoration: none; color:black;">Go back</a></button>
+    <form id="search-form">
+      <label for="search">Search</label>
+      <input id="search" placeholder="e.g. Ted">
+    </form>
+    <table id="data-table">
+      <thead>
+        <tr>
+          <th data-prop="surah">Surah</th>
+          <th data-prop="errors">Errors</th>
+          <th data-prop="testable">Testable</th>
+        </tr>  
+      </thead>
+      <tbody></tbody>
+    </table>
 </Layout>
+
+<style>
+table {
+  width: 100%;
+  background-color: #fff;
+  border-collapse: collapse;
+  border-left: 1px solid #ccc;
+  border-right: 1px solid #ccc;  
+}
+
+th {
+  text-align: left;  
+  cursor: pointer;
+}
+
+th, td {
+  padding: .6em;
+  font-weight: 300;
+  transition: all ease-out 300ms;
+}
+
+tbody td {
+  border-bottom: 1px #CFEAEC solid;
+}
+
+thead {
+  background-color: #CFEAEC;
+}
+th.is-sorted {
+  background-color: #B2D8DB;
+}
+
+td.is-sorted {
+  background-color: #FFF5E0;
+  border-bottom-color: #FFE1A6;
+}
+
+form {
+  margin-bottom: 1em;
+  text-align: center;
+}
+
+input {
+  font-size: 100%;
+  border: none;
+  padding: .5em;
+  font-weight: 300;
+}
+
+label {
+  color: #fff;
+  display: inline-block;
+  margin-right: 1em;
+ font-weight: 300;
+}
+</style>
+
+<script>
+const data = [
+  { surah: "David", errors: "Lewis", testable: "Developer" },
+  { surah: "Daryll", errors: "Jann", testable: "Developer" },
+  { surah: "Ipek", errors: "Turgul", testable: "Developer" },
+  { surah: "Wayne", errors: "Perry", testable: "Designer" },
+  { surah: "Sam", errors: "Thebridge", testable: "Designer" },
+  { surah: "Scott", errors: "Christopher", testable: "Developer" },
+  { surah: "Luke", errors: "Peterson", testable: "Developer" },
+  { surah: "Sam", errors: "Arcolace", testable: "Developer" },
+  { surah: "Dave", errors: "Cotton", testable: "Developer" },
+  { surah: "Manvinda", errors: "Verma", testable: "Tester" },
+  { surah: "Ted", errors: "Tencza", testable: "Boss" }
+];
+
+let filteredData = [...data];
+let sortProp = null;
+let sortAsc = true;
+
+const tbody = document.querySelector("#data-table tbody");
+const searchInput = document.querySelector("#search");
+const headers = document.querySelectorAll("#data-table thead th");
+
+function renderTable(rows) {
+  tbody.innerHTML = "";
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.surah}</td>
+      <td>${row.errors}</td>
+      <td>${row.testable}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function sortTable(prop) {
+  if (sortProp === prop) {
+    sortAsc = !sortAsc;
+  } else {
+    sortProp = prop;
+    sortAsc = true;
+  }
+  filteredData.sort((a, b) => {
+    if (a[prop] > b[prop]) return sortAsc ? 1 : -1;
+    if (a[prop] < b[prop]) return sortAsc ? -1 : 1;
+    return 0;
+  });
+  renderTable(filteredData);
+}
+
+function filterTable(term) {
+  filteredData = data.filter(row =>
+    row.surah.toLowerCase().includes(term) ||
+    row.errors.toLowerCase().includes(term) ||
+    row.testable.toLowerCase().includes(term)
+  );
+  if (sortProp) sortTable(sortProp);
+  else renderTable(filteredData);
+}
+
+headers.forEach(th => {
+  th.addEventListener("click", () => sortTable(th.dataset.prop));
+});
+
+searchInput.addEventListener("input", e =>
+  filterTable(e.target.value.toLowerCase())
+);
+
+renderTable(filteredData);
+</script>
