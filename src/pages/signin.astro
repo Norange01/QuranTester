@@ -15,11 +15,11 @@ if (accessToken && refreshToken) {
 ---
 
 <Layout>
-  <div class="full-screen-elem" style="background-color: var(--color1); height:100%; width:100%">
+  <!--div class="full-screen-elem" style="background-color: var(--color1); height:100%; width:100%">
     <h1 style="text-align: center;">Sign in</h1>
     <p style="text-align: center;">New here? <a href="/register">Create an account</a></p>
-    <form action="/api/auth/signin" method="post" style="display: table; outline: 2px solid var(--color4); padding:20px;">
-      <div class="input-div" style="display: table-row;">
+    <form action="/api/auth/signin" method="post" class="login-box">
+      <div class="input-div">
         <label for="email">Email</label>
         <input type="email" name="email" id="email"/>
       </div>
@@ -31,14 +31,128 @@ if (accessToken && refreshToken) {
         <button type="submit">Login</button>
       </div>
     </form>
+  </div-->
+
+
+  <div class="login-box">
+    <h2>Login</h2>
+    <form action="/api/auth/signin" method="post">
+      <div class="user-box">
+        <input type="email" name="email" id="email"/>
+        <label>Username</label>
+      </div>
+      <div class="user-box">
+        <input type="password" name="password" id="password"/>
+        <label>Password</label>
+      </div>
+      <div class="user-box">
+        <p style="text-align: center;">New here? <a href="/register">Create an account</a></p>
+        <button type="submit">Login</button>
+      </div>
+    </form>
   </div>
 </Layout>
 
 <style>
-.input-div{
+/*.input-div{
   display: table-row;
 }
 label, input{
   display:table-cell;
+}*/
+
+html {
+  height: 100%;
 }
+
+.login-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  padding: 40px;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,.5);
+  box-sizing: border-box;
+  box-shadow: 0 15px 25px rgba(0,0,0,.6);
+  border-radius: 10px;
+}
+
+.login-box h2 {
+  margin: 0 0 30px;
+  padding: 0;
+  color: var(--color5);
+  text-align: center;
+}
+
+.login-box .user-box {
+  position: relative;
+}
+
+.login-box .user-box input {
+  width: 100%;
+  padding: 10px 0;
+  font-size: 16px;
+  color:  var(--color5);
+  margin-bottom: 30px;
+  border: none;
+  border-bottom: 1px solid  var(--color5);
+  outline: none;
+  background: transparent;
+}
+.login-box .user-box label {
+  position: absolute;
+  top:0;
+  left: 0;
+  padding: 10px 0;
+  font-size: 16px;
+  color:  var(--color5);
+  pointer-events: none;
+  transition: .5s;
+}
+
+.login-box .user-box input:focus ~ label,
+.login-box .user-box input:valid ~ label {
+  top: -20px;
+  left: 0;
+  color:  var(--color4);
+  font-size: 12px;
+}
+
+button {
+  background-color:transparent;
+  color:var(--color4);
+  border-radius:0;
+  font-weight: bold;
+  letter-spacing:1px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  cursor: pointer;
+  border: 1px solid var(--color4);
+  padding: 2%;
+  display:block;
+  margin: 0 auto;
+  transition: 0.2s;
+}
+
+button:hover{
+  background-color:var(--color4);
+  color:var(--color1);
+}
+
+
+
+/*.login-box form a {
+  position: relative;
+  display: inline-block;
+  padding: 10px 20px;
+  color: #03e9f4;
+  font-size: 16px;
+  text-decoration: none;
+  text-transform: uppercase;
+  overflow: hidden;
+  transition: .5s;
+  margin-top: 40px;
+  letter-spacing: 4px
+}*/
+
 </style>

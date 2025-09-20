@@ -1,9 +1,10 @@
 html{
     --color0: black;
-    --color1: #4a1123;
-    --color2: #0d5148;
+    --color1: #103535;
+    --color2: #1c5f61;
     --color3: #94b9b4;
-    --color4: #ffe2cf;
+    --color4: #ffecaa;
+    --color5: #ffffff;
 }
 
 body{
@@ -35,5 +36,5 @@ label{
 }
 
 a{
-    color: var(--color3);
+    color: var(--color4);
 }
