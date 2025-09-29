@@ -1,47 +1,8 @@
-# Astro Starter Kit: Minimal
-
-```sh
-npm create astro@latest -- --template minimal
-```
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/minimal)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/minimal)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/minimal/devcontainer.json)
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+# QuranTester: Advanced Quizzing System for Testing Your Quran Memorization
+## Algorithm
+In this quizzing system, questions (or in this case, verses) are split into 2 main categories:
+- Forgotten: questions untested or tested and answered correctly
+- Incorrect: questions answered incorrectly
+The number of forgotten verses tested for every incorrectly-answered verse tested depends on a ratio the user sets. This system provides a balance between forcing the brain to strengthen memory of the incorrectly-answered verses by frequent testing, routinely testing the verses answered correctly to avoid forgetting them, and annotating untested verses to have memorization strength data for all verses. Each time a verse is tested, the current timestamp is stored in order to always sort both sets of questions from the earliest tested to the latest tested.
+## Other Tools Used
+his project uses Supabase for user authentication and data storage. That way, users can access the application anywhere: on their other screen while working, on their phone while on the bus, or on their iPad when competing with their friends. The main framework used was Astro due to its simplicity and support for modular design. The project is currently hosted by Vercel.
