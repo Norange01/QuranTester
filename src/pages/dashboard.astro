@@ -90,13 +90,15 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
 
 <Layout>
-  <h1>Welcome {display_name}</h1>
-  <p><span id="on-track-span"></span></p>
-  <form action="/api/auth/signout">
-    <button type="submit">Sign out</button>
-    
-  </form>
-  <button id="hifz-data-btn"><a href=/hifz_data style="text-decoration: none; color:black;">Hifz Data</a></button>
+  <div id="dashboard-header-container">
+    <h1 style="margin:0;">Welcome {display_name}</h1>
+    <p><span id="on-track-span"></span></p>
+    <form action="/api/auth/signout" style="display: inline-block;">
+      <button type="submit">Sign out</button>
+      
+    </form>
+    <button id="hifz-data-btn"><a href=/hifz_data style="text-decoration: none; color: inherit;">Hifz Data</a></button>
+  </div>
   <div id="prompt-and-answer">
     <span id="surah-name-span" style="color: rgb(137, 137, 137);">_</span>
     <div id="prompt-div">
@@ -112,6 +114,7 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
     <button id="correct-btn" class="inactive">Correct</button>
   </div>
   
+  
 </Layout>
 
 <style>
@@ -121,6 +124,10 @@ let user_forgotten_ayahs_randomized_ids = get_partitioned_randomized_arr(forgott
 
   .inactive{
     display:none;
+  }
+
+  #dashboard-header-container{
+    padding: 20px;
   }
 
   #prompt-span, #answer-span{

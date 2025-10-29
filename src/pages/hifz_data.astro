@@ -9,6 +9,7 @@ import Papa from "papaparse";
 import Ayah from "../icons/Ayah.astro";
 import {get_partitioned_randomized_arr, shuffle} from "../scripts/partitioned_randomization.js";
 import { count } from "node:console";
+import {ayah_is_testable, surah_is_testable} from "../scripts/hifz_data.js";
 
 const accessToken = Astro.cookies.get("sb-access-token");
 const refreshToken = Astro.cookies.get("sb-refresh-token");
@@ -51,15 +52,27 @@ const user_id = session.data.user?.id;
 if(!display_name){
   display_name=email;
 }
+
+let { data: data_table } = await supabase.from('tested_ayahs').select('ayah, incorrectness');
+let data_table_mapped = data_table?.map(row => row.ayah);
+
+let ayahs_testable = [];
+for(let i=0; i<data_table_mapped?.length; i++){
+  let testability = await ayah_is_testable(data_table_mapped[i].ayah)
+  ayahs_testable.push(testability);
+}
+
 ---
 
 <Layout>
+  <div id="dashboard-header-container">
     <h1>Hifz Data</h1>
-    <button><a href=/dashboard style="text-decoration: none; color:black;">Go back</a></button>
+    <button><a href=/dashboard style="text-decoration: none; color:inherit;">Go back</a></button>
     <form id="search-form">
       <label for="search">Search</label>
       <input id="search" placeholder="e.g. Ted">
     </form>
+  </div>
     <table id="data-table">
       <thead>
         <tr>
@@ -73,6 +86,11 @@ if(!display_name){
 </Layout>
 
 <style>
+
+#dashboard-header-container{
+  padding: 20px;
+}
+
 table {
   width: 100%;
   background-color: #fff;
